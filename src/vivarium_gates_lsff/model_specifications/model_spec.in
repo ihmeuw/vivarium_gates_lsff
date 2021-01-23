@@ -2,6 +2,7 @@ components:
     vivarium_public_health:
         population:
             - BasePopulation()
+            - FertilityCrudeBirthRate()
             - Mortality()
         metrics:
             - DisabilityObserver()
@@ -17,26 +18,26 @@ configuration:
         artifact_path: {{ artifact_directory }}/{{ location_sanitized }}.hdf
     interpolation:
         order: 0
-        extrapolate: False
+        extrapolate: True
     randomness:
         map_size: 1_000_000
         key_columns: ['entrance_time', 'age']
         random_seed: 0
     time:
         start:
-            year: 2005
-            month: 7
+            year: 2020
+            month: 1
             day: 2
         end:
-            year: 2010
-            month: 7
-            day: 2
+            year: 2023
+            month: 12
+            day: 30
         step_size: 1 # Days
     population:
-        population_size: 100
+        population_size: 10_000
         age_start: 0
-        age_end: 100
-
+        age_end: 5
+        exit_age: 5
     metrics:
         disability:
             by_age: False

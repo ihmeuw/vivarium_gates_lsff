@@ -1,11 +1,12 @@
+from typing import NamedTuple
+
+
 ####################
 # Project metadata #
 ####################
 
 PROJECT_NAME = 'vivarium_gates_lsff'
 CLUSTER_PROJECT = 'proj_cost_effect'
-# # TODO use proj_csu if a csu project
-# CLUSTER_PROJECT = 'proj_csu'
 
 CLUSTER_QUEUE = 'all.q'
 MAKE_ARTIFACT_MEM = '10G'
@@ -13,6 +14,9 @@ MAKE_ARTIFACT_CPU = '1'
 MAKE_ARTIFACT_RUNTIME = '3:00:00'
 MAKE_ARTIFACT_SLEEP = 10
 
-LOCATIONS = [
-    # TODO - project locations here
-]
+
+class __Locations(NamedTuple):
+    TANZANIA: str = 'United Republic of Tanzania'
+    UGANDA: str = 'Uganda'
+
+LOCATIONS = __Locations()
