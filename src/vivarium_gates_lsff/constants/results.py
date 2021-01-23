@@ -46,19 +46,16 @@ NON_COUNT_TEMPLATES = [
 
 POP_STATES = ('living', 'dead', 'tracked', 'untracked')
 SEXES = ('male', 'female')
-# TODO - add literals for years in the model
-YEARS = ()
-# TODO - add literals for ages in the model
-AGE_GROUPS = ()
+YEARS = tuple(range(2020, 2024))
+AGE_GROUPS = ('early_neonatal', 'late_neonatal', 'post_neonatal', '1_to_4')
 # TODO - add causes of death
 CAUSES_OF_DEATH = (
     'other_causes',
-    # models.FIRST_STATE_NAME,
+    models.DIARRHEA_WITH_CONDITION_STATE_NAME,
 )
 # TODO - add causes of disability
 CAUSES_OF_DISABILITY = (
-    # models.FIRST_STATE_NAME,
-    # models.SECOND_STATE_NAME,
+    models.DIARRHEA_WITH_CONDITION_STATE_NAME,
 )
 
 TEMPLATE_FIELD_MAP = {
