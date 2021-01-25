@@ -73,7 +73,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
         data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
         data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT: load_iron_deficiency_dw,
-        #data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
+        data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_RESTRICTIONS: load_metadata,
     })
     mapping.update(map_loader_funcs(data_keys.CSMR_AFFECTEDBY_LBWSG))
     return mapping[lookup_key](lookup_key, location)
