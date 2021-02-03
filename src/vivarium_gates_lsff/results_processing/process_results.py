@@ -79,7 +79,7 @@ def read_model_spec_for_start_end(path: Path) -> Tuple[int, int]:
     with (path / 'model_specification.yaml').open() as f:
         spec = yaml.full_load(f)
     time_cfg = spec['configuration']['time']
-    return (time_cfg['start']['year'], time_cfg['end']['year']+1)
+    return (time_cfg['start']['year'], time_cfg['end']['year'])
 
 
 def filter_out_incomplete(data, keyspace):

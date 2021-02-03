@@ -21,7 +21,7 @@ def build_results(output_file: str, single_run: bool):
     #  to run for less than the full duration and that will cause an error
     #  when using the default time period
     field_map = TEMPLATE_FIELD_MAP.copy()
-    field_map['YEAR'] = tuple(range(years[0], years[1]))
+    field_map['YEAR'] = tuple(range(years[0], years[1]+1))
 
     logger.info(f'Filtering incomplete data from outputs.')
     rows = len(data)
