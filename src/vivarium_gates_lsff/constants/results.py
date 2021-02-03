@@ -73,7 +73,7 @@ TEMPLATE_FIELD_MAP = {
 }
 
 
-def RESULT_COLUMNS(kind='all'):
+def RESULT_COLUMNS(field_map, kind='all'):
     if kind not in COLUMN_TEMPLATES and kind != 'all':
         raise ValueError(f'Unknown result column type {kind}')
     columns = []
@@ -84,7 +84,7 @@ def RESULT_COLUMNS(kind='all'):
     else:
         template = COLUMN_TEMPLATES[kind]
         filtered_field_map = {field: values
-                              for field, values in TEMPLATE_FIELD_MAP.items() if f'{{{field}}}' in template}
+                              for field, values in field_map.items() if f'{{{field}}}' in template}
         fields, value_groups = filtered_field_map.keys(), itertools.product(*filtered_field_map.values())
         for value_group in value_groups:
             columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}))

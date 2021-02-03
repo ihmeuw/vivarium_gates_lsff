@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Tuple
 
 import pandas as pd
 import yaml
@@ -23,15 +23,15 @@ OUTPUT_COLUMN_SORT_ORDER = [
 ]
 
 
-def make_measure_data(data):
+def make_measure_data(data, field_map):
     measure_data = MeasureData(
-        population=get_population_data(data),
-        ylls=get_by_cause_measure_data(data, 'ylls'),
-        ylds=get_by_cause_measure_data(data, 'ylds'),
-        deaths=get_by_cause_measure_data(data, 'deaths'),
-        person_time=get_measure_data(data, 'person_time'),
-        # disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time'),
-        # disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count'),
+        population=get_population_data(data, field_map),
+        ylls=get_by_cause_measure_data(data, 'ylls', field_map),
+        ylds=get_by_cause_measure_data(data, 'ylds', field_map),
+        deaths=get_by_cause_measure_data(data, 'deaths', field_map),
+        person_time=get_measure_data(data, 'person_time', field_map),
+        #disease_state_person_time=get_state_person_time(data, field_map),
+        #disease_transition_count=get_transition_count_measure_data(data, field_map),
     )
     return measure_data
 
@@ -51,7 +51,7 @@ class MeasureData(NamedTuple):
             df.to_csv(output_dir / f'{key}.csv')
 
 
-def read_data(path: Path, single_run: bool) -> (pd.DataFrame, List[str]):
+def read_data(path: Path, single_run: bool) -> (pd.DataFrame, List[str], Tuple[int, int]):
     data = pd.read_hdf(path)
     # noinspection PyUnresolvedReferences
     data = (data
@@ -71,7 +71,15 @@ def read_data(path: Path, single_run: bool) -> (pd.DataFrame, List[str]):
         data[results.RANDOM_SEED_COLUMN] = data[results.RANDOM_SEED_COLUMN].astype(int)
         with (path.parent / 'keyspace.yaml').open() as f:
             keyspace = yaml.full_load(f)
-    return data, keyspace
+    years = read_model_spec_for_start_end(path.parent)
+    return data, keyspace, years
+
+
+def read_model_spec_for_start_end(path: Path) -> Tuple[int, int]:
+    with (path / 'model_specification.yaml').open() as f:
+        spec = yaml.full_load(f)
+    time_cfg = spec['configuration']['time']
+    return (time_cfg['start']['year'], time_cfg['end']['year'])
 
 
 def filter_out_incomplete(data, keyspace):
@@ -89,10 +97,10 @@ def filter_out_incomplete(data, keyspace):
     return pd.concat(output, ignore_index=True).reset_index(drop=True)
 
 
-def aggregate_over_seed(data):
+def aggregate_over_seed(data, field_map):
     non_count_columns = []
     for non_count_template in results.NON_COUNT_TEMPLATES:
-        non_count_columns += results.RESULT_COLUMNS(non_count_template)
+        non_count_columns += results.RESULT_COLUMNS(field_map, non_count_template)
     count_columns = [c for c in data.columns if c not in non_count_columns + GROUPBY_COLUMNS]
 
     # non_count_data = data[non_count_columns + GROUPBY_COLUMNS].groupby(GROUPBY_COLUMNS).mean()
@@ -127,34 +135,41 @@ def split_processing_column(data):
     return data.drop(columns='process')
 
 
-def get_population_data(data):
+def get_population_data(data, field_map):
     total_pop = pivot_data(data[[results.TOTAL_POPULATION_COLUMN]
-                                + results.RESULT_COLUMNS('population')
+                                + results.RESULT_COLUMNS(field_map, 'population')
                                 + GROUPBY_COLUMNS])
     total_pop = total_pop.rename(columns={'process': 'measure'})
     return sort_data(total_pop)
 
 
-def get_measure_data(data, measure):
-    data = pivot_data(data[results.RESULT_COLUMNS(measure) + GROUPBY_COLUMNS])
+def get_measure_data(data, measure, field_map):
+    data = pivot_data(data[results.RESULT_COLUMNS(field_map, measure) + GROUPBY_COLUMNS])
     data = split_processing_column(data)
     return sort_data(data)
 
 
-def get_by_cause_measure_data(data, measure):
-    data = get_measure_data(data, measure)
+def get_by_cause_measure_data(data, measure, field_map):
+    data = get_measure_data(data, measure, field_map)
     data['measure'], data['cause'] = data.measure.str.split('_due_to_').str
     return sort_data(data)
 
 
-def get_state_person_time_measure_data(data, measure):
-    data = get_measure_data(data, measure)
+def get_state_person_time_measure_data(data, measure, field_map):
+    data = get_measure_data(data, measure, field_map)
     data['measure'], data['cause'] = 'state_person_time', data.measure.str.split('_person_time').str[0]
     return sort_data(data)
 
 
-def get_transition_count_measure_data(data, measure):
-    # Oops, edge case.
-    data = data.drop(columns=[c for c in data.columns if 'event_count' in c and '2041' in c])
-    data = get_measure_data(data, measure)
+def get_transition_count_measure_data(data, measure, field_map):
+    data = get_measure_data(data, 'event_count', field_map)
+    data['cause'] = data['measure'].str.split('_person_time').str[0]
+    data['measure'] = 'person_time'
+    return sort_data(data)
+
+
+def get_state_person_time(data, field_map):
+    data = get_measure_data(data, 'state_person_time', field_map)
+    data['cause'] = data['measure'].str.split('_person_time').str[0]
+    data['measure'] = 'person_time'
     return sort_data(data)
