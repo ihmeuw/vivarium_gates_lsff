@@ -29,9 +29,8 @@ def make_measure_data(data, field_map):
         ylls=get_by_cause_measure_data(data, 'ylls', field_map),
         ylds=get_by_cause_measure_data(data, 'ylds', field_map),
         deaths=get_by_cause_measure_data(data, 'deaths', field_map),
-        person_time=get_measure_data(data, 'person_time', field_map),
-        #disease_state_person_time=get_state_person_time(data, field_map),
-        #disease_transition_count=get_transition_count_measure_data(data, field_map),
+        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', field_map),
+        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', field_map),
     )
     return measure_data
 
@@ -41,9 +40,8 @@ class MeasureData(NamedTuple):
     ylls: pd.DataFrame
     ylds: pd.DataFrame
     deaths: pd.DataFrame
-    person_time: pd.DataFrame
-    #disease_state_person_time: pd.DataFrame
-    #disease_transition_count: pd.DataFrame
+    disease_state_person_time: pd.DataFrame
+    disease_transition_count: pd.DataFrame
 
     def dump(self, output_dir: Path):
         for key, df in self._asdict().items():
@@ -128,7 +126,7 @@ def sort_data(data):
 
 def split_processing_column(data):
     # TODO the required splitting here is dependant on what types of stratification exist in the model
-    data['process'], data['age'] = data.process.str.split('_age').str
+    data['process'], data['age'] = data.process.str.split('_in_age_group_').str
     data['process'], data['sex'] = data.process.str.split('_among_').str
     data['year'] = data.process.str.split('_in_').str[-1]
     data['measure'] = data.process.str.split('_in_').str[:-1].apply(lambda x: '_in_'.join(x))
@@ -162,14 +160,7 @@ def get_state_person_time_measure_data(data, measure, field_map):
 
 
 def get_transition_count_measure_data(data, measure, field_map):
-    data = get_measure_data(data, 'event_count', field_map)
-    data['cause'] = data['measure'].str.split('_person_time').str[0]
-    data['measure'] = 'person_time'
-    return sort_data(data)
-
-
-def get_state_person_time(data, field_map):
-    data = get_measure_data(data, 'state_person_time', field_map)
-    data['cause'] = data['measure'].str.split('_person_time').str[0]
-    data['measure'] = 'person_time'
+    data = get_measure_data(data, measure, field_map)
+    data['cause'] = data['measure'].str.split('_event_count').str[0]
+    data['measure'] = 'transition_count'
     return sort_data(data)
