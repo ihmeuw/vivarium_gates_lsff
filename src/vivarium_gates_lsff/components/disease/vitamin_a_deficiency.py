@@ -4,7 +4,8 @@ import pandas as pd
 from vivarium.framework.values import list_combiner, union_post_processor
 from vivarium_public_health.risks.data_transformations import pivot_categorical
 
-from vivarium_conic_lsff import globals as project_globals
+from vivarium_gates_lsff.constants import models
+from vivarium_gates_lsff.constants.data_keys import VITAMIN_A
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -42,7 +43,7 @@ class VitaminADeficiency:
 
     # RiskEffect requires this block
     configuration_defaults = {
-        project_globals.VITAMIN_A_MODEL_NAME: {
+        models.VITAMIN_A_MODEL_NAME: {
             "exposure": 'data',
             "rebinned_exposed": [],
             "category_thresholds": [],
@@ -51,13 +52,13 @@ class VitaminADeficiency:
 
     @property
     def name(self):
-        return project_globals.VITAMIN_A_MODEL_NAME
+        return models.VITAMIN_A_MODEL_NAME
 
     def setup(self, builder: 'Builder'):
         self.clock = builder.time.clock()
         self.randomness = builder.randomness.get_stream(f'{self.name}_initial_states')
 
-        disability_weight_data = builder.data.load(project_globals.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT)
+        disability_weight_data = builder.data.load(VITAMIN_A.VITAMIN_A_DEFICIENCY_DISABILITY_WEIGHT)
         self.base_disability_weight = builder.lookup.build_table(disability_weight_data,
                                                                  key_columns=['sex'],
                                                                  parameter_columns=['age', 'year'])
@@ -67,7 +68,7 @@ class VitaminADeficiency:
             requires_columns=['age', 'sex', 'alive', self.name])
         builder.value.register_value_modifier('disability_weight', modifier=self.disability_weight)
 
-        exposure_data = builder.data.load(project_globals.VITAMIN_A_DEFICIENCY_EXPOSURE)
+        exposure_data = builder.data.load(VITAMIN_A.VITAMIN_A_DEFICIENCY_EXPOSURE)
         exposure_data = pivot_categorical(exposure_data)
         exposure_data = exposure_data.drop('cat2', axis=1)
         self._base_exposure = builder.lookup.build_table(exposure_data,
@@ -93,9 +94,9 @@ class VitaminADeficiency:
         )
 
         columns_created = [self.name,
-                           project_globals.VITAMIN_A_GOOD_EVENT_TIME, project_globals.VITAMIN_A_GOOD_EVENT_COUNT,
-                           project_globals.VITAMIN_A_BAD_EVENT_TIME, project_globals.VITAMIN_A_BAD_EVENT_COUNT,
-                           project_globals.VITAMIN_A_PROPENSITY]
+                           models.VITAMIN_A_ADEQUATE_EVENT_TIME, models.VITAMIN_A_ADEQUATE_EVENT_COUNT,
+                           models.VITAMIN_A_DEFICIENT_EVENT_TIME, models.VITAMIN_A_DEFICIENT_EVENT_COUNT,
+                           models.VITAMIN_A_PROPENSITY]
         view_columns = columns_created + ['alive', 'age', 'sex']
         self.population_view = builder.population.get_view(view_columns)
         builder.population.initializes_simulants(
@@ -112,15 +113,15 @@ class VitaminADeficiency:
         propensity = self.randomness.get_draw(pop_data.index)
 
         exposure = self._get_sample_exposure(propensity)
-        disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME,
-                                       'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
+        disease_status = exposure.map({'cat1': models.VITAMIN_A_WITH_CONDITION_STATE_NAME,
+                                       'cat2': models.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
         pop_update = pd.DataFrame({
             self.name: disease_status,
-            project_globals.VITAMIN_A_BAD_EVENT_TIME: pd.NaT,
-            project_globals.VITAMIN_A_BAD_EVENT_COUNT: 0,
-            project_globals.VITAMIN_A_GOOD_EVENT_TIME: pd.NaT,
-            project_globals.VITAMIN_A_GOOD_EVENT_COUNT: 0,
-            project_globals.VITAMIN_A_PROPENSITY: propensity
+            models.VITAMIN_A_DEFICIENT_EVENT_TIME: pd.NaT,
+            models.VITAMIN_A_DEFICIENT_EVENT_COUNT: 0,
+            models.VITAMIN_A_ADEQUATE_EVENT_TIME: pd.NaT,
+            models.VITAMIN_A_ADEQUATE_EVENT_COUNT: 0,
+            models.VITAMIN_A_PROPENSITY: propensity
             }, index=pop_data.index)
         self.population_view.update(pop_update)
 
@@ -128,20 +129,20 @@ class VitaminADeficiency:
         pop = self.population_view.get(event.index, query='alive =="alive"')
         exposure = self.exposure(pop.index)
 
-        current_disease_status = exposure.map({'cat1': project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME,
-                                               'cat2': project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
+        current_disease_status = exposure.map({'cat1': models.VITAMIN_A_WITH_CONDITION_STATE_NAME,
+                                               'cat2': models.VITAMIN_A_SUSCEPTIBLE_STATE_NAME})
         old_disease_status = pop[self.name]
 
-        incident_cases = ((old_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
-                          & (current_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME))
-        remitted_cases = ((old_disease_status == project_globals.VITAMIN_A_WITH_CONDITION_STATE_NAME)
-                          & (current_disease_status == project_globals.VITAMIN_A_SUSCEPTIBLE_STATE_NAME))
+        incident_cases = ((old_disease_status == models.VITAMIN_A_SUSCEPTIBLE_STATE_NAME)
+                          & (current_disease_status == models.VITAMIN_A_WITH_CONDITION_STATE_NAME))
+        remitted_cases = ((old_disease_status == models.VITAMIN_A_WITH_CONDITION_STATE_NAME)
+                          & (current_disease_status == models.VITAMIN_A_SUSCEPTIBLE_STATE_NAME))
 
         pop[self.name] = current_disease_status
-        pop.loc[incident_cases, project_globals.VITAMIN_A_BAD_EVENT_TIME] = event.time
-        pop.loc[remitted_cases, project_globals.VITAMIN_A_GOOD_EVENT_TIME] = event.time
-        pop.loc[incident_cases, project_globals.VITAMIN_A_BAD_EVENT_COUNT] += 1
-        pop.loc[remitted_cases, project_globals.VITAMIN_A_GOOD_EVENT_COUNT] += 1
+        pop.loc[incident_cases, models.VITAMIN_A_DEFICIENT_EVENT_TIME] = event.time
+        pop.loc[remitted_cases, models.VITAMIN_A_ADEQUATE_EVENT_TIME] = event.time
+        pop.loc[incident_cases, models.VITAMIN_A_DEFICIENT_EVENT_COUNT] += 1
+        pop.loc[remitted_cases, models.VITAMIN_A_ADEQUATE_EVENT_COUNT] += 1
 
         self.population_view.update(pop)
 
@@ -158,7 +159,7 @@ class VitaminADeficiency:
 
     def get_current_exposure(self, index):
         propensity = self.population_view.subview(
-            [project_globals.VITAMIN_A_PROPENSITY]).get(index).vitamin_a_deficiency_propensity
+            [models.VITAMIN_A_PROPENSITY]).get(index).vitamin_a_deficiency_propensity
         return self._get_sample_exposure(propensity)
 
     def _get_sample_exposure(self, propensity):
