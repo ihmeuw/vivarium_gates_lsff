@@ -13,8 +13,9 @@ components:
             - DisabilityObserver()
             - MortalityObserver()
 
-    # Causes an error if left empty. Uncomment when you have components. 
-    # vivarium_gates_lsff.components:
+    vivarium_gates_lsff.components:
+        - VitaminADeficiency()
+
 
 configuration:
     input_data:
