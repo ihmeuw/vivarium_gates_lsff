@@ -1,1 +1,2 @@
 from .vitamin_a_deficiency import VitaminADeficiency
+from .iron_deficiency import IronDeficiency, IronDeficiencyDistribution

@@ -7,7 +7,8 @@ from vivarium_public_health.utilities import to_years
 
 from vivarium_public_health.risks.distributions import clip
 
-from vivarium_conic_lsff import globals as project_globals
+from vivarium_gates_lsff.constants import models, data_values
+from vivarium_gates_lsff.constants.data_keys import IRON_DEFICIENCY
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -21,7 +22,7 @@ class IronDeficiency:
 
     @property
     def name(self):
-        return project_globals.IRON_DEFICIENCY_MODEL_NAME
+        return models.IRON_DEFICIENCY_MODEL_NAME
 
     @property
     def sub_components(self):
@@ -131,9 +132,9 @@ class IronDeficiency:
     def load_iron_responsiveness_threshold(self, builder):
         data = []
         keys = {
-            'mild': project_globals.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION,
-            'moderate': project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION,
-            'severe': project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION
+            'mild': IRON_DEFICIENCY.IRON_DEFICIENCY_MILD_ANEMIA_IRON_RESPONSIVE_PROPORTION,
+            'moderate': IRON_DEFICIENCY.IRON_DEFICIENCY_MODERATE_ANEMIA_IRON_RESPONSIVE_PROPORTION,
+            'severe': IRON_DEFICIENCY.IRON_DEFICIENCY_SEVERE_ANEMIA_IRON_RESPONSIVE_PROPORTION
         }
         for severity, data_key in keys.items():
             proportion = builder.data.load(data_key)
@@ -148,9 +149,9 @@ class IronDeficiency:
     def load_disability_weight_data(self, builder):
         data = []
         keys = {
-            'mild': project_globals.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT,
-            'moderate': project_globals.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT,
-            'severe': project_globals.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT,
+            'mild': IRON_DEFICIENCY.IRON_DEFICIENCY_MILD_ANEMIA_DISABILITY_WEIGHT,
+            'moderate': IRON_DEFICIENCY.IRON_DEFICIENCY_MODERATE_ANEMIA_DISABILITY_WEIGHT,
+            'severe': IRON_DEFICIENCY.IRON_DEFICIENCY_SEVERE_ANEMIA_DISABILITY_WEIGHT,
         }
         for severity, data_key in keys.items():
             disability_weight = builder.data.load(data_key)
@@ -167,7 +168,7 @@ class IronDeficiencyDistribution:
 
     @property
     def name(self):
-        return f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}_exposure_distribution'
+        return f'{models.IRON_DEFICIENCY_MODEL_NAME}_exposure_distribution'
 
     def setup(self, builder: 'Builder'):
         exposure_parameters = self.load_exposure_parameters(builder)
@@ -175,7 +176,7 @@ class IronDeficiencyDistribution:
                                                    key_columns=['sex'],
                                                    parameter_columns=['age', 'year'])
         self.exposure_parameters = builder.value.register_value_producer(
-            f'{project_globals.IRON_DEFICIENCY_MODEL_NAME}.exposure_parameters',
+            f'{models.IRON_DEFICIENCY_MODEL_NAME}.exposure_parameters',
             source=exposure_data,
             requires_columns=['age', 'sex']
         )
@@ -185,8 +186,8 @@ class IronDeficiencyDistribution:
         exposure_data = self.exposure_parameters(propensity.index)
         mean = exposure_data['mean']
         sd = exposure_data['sd']
-        exposure = (project_globals.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA * self._gamma_ppf(propensity, mean, sd)
-                    + project_globals.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GUMBEL * self._mirrored_gumbel_ppf(propensity, mean, sd))
+        exposure = (data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA * self._gamma_ppf(propensity, mean, sd)
+                    + data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GUMBEL * self._mirrored_gumbel_ppf(propensity, mean, sd))
         return pd.Series(exposure, index=propensity.index, name='value')
 
     @staticmethod
@@ -197,18 +198,18 @@ class IronDeficiencyDistribution:
 
     @staticmethod
     def _mirrored_gumbel_ppf(propensity, mean, sd):
-        x_max = project_globals.HEMOGLOBIN_DISTRIBUTION.EXPOSURE_MAX
+        x_max = data_values.HEMOGLOBIN_DISTRIBUTION.EXPOSURE_MAX
         alpha = x_max - mean - (sd * np.euler_gamma * np.sqrt(6) / np.pi)
         scale = sd * np.sqrt(6) / np.pi
         return x_max - scipy.stats.gumbel_r(alpha, scale=scale).ppf(1 - propensity)
 
     @staticmethod
     def load_exposure_parameters(builder):
-        exposure_mean = builder.data.load(project_globals.IRON_DEFICIENCY_EXPOSURE).drop(columns=['parameter'])
+        exposure_mean = builder.data.load(IRON_DEFICIENCY.IRON_DEFICIENCY_EXPOSURE).drop(columns=['parameter'])
         exposure_mean = (exposure_mean
                          .set_index([c for c in exposure_mean.columns if c != 'value'])
                          .rename(columns={'value': 'mean'}))
-        exposure_sd = builder.data.load(project_globals.IRON_DEFICIENCY_EXPOSURE_SD)
+        exposure_sd = builder.data.load(IRON_DEFICIENCY.IRON_DEFICIENCY_EXPOSURE_SD)
         exposure_sd = (exposure_sd
                        .set_index([c for c in exposure_sd.columns if c != 'value'])
                        .rename(columns={'value': 'sd'}))

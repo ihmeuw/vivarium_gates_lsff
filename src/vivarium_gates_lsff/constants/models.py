@@ -52,6 +52,11 @@ VITAMIN_A_PROPENSITY = f'{VITAMIN_A_MODEL_NAME}_propensity'
 VITAMIN_A_RISK_CATEGORIES = ['cat1', 'cat2']
 
 
+IRON_DEFICIENCY_MODEL_NAME = 'iron_deficiency'
+ANEMIA_SEVERITY_GROUPS = ['none', 'mild', 'moderate', 'severe']
+ANEMIA_OBSERVER = 'anemia_observer'
+
+
 STATE_MACHINE_MAP = {
     DIARRHEA_MODEL_NAME: {
         'states': DIARRHEA_MODEL_STATES,
