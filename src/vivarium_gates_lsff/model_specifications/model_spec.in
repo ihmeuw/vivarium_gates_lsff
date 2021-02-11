@@ -18,6 +18,7 @@ components:
 
     vivarium_gates_lsff.components:
         - VitaminADeficiency()
+        - IronDeficiency()
 
 
 configuration:
