@@ -13,12 +13,14 @@ components:
         metrics:
             - DiseaseObserver('diarrheal_diseases')
             - DiseaseObserver('measles')
+            - DiseaseObserver('neural_tube_defects')
             - DisabilityObserver()
             - MortalityObserver()
 
     vivarium_gates_lsff.components:
         - VitaminADeficiency()
         - IronDeficiency()
+        - NeonatalSWC_without_incidence('neural_tube_defects')
 
 
 configuration:
