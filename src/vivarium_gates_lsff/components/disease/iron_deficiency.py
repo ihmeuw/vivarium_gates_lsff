@@ -3,7 +3,9 @@ import typing
 import numpy as np
 import pandas as pd
 import scipy.stats
+
 from vivarium_public_health.utilities import to_years
+from vivarium_public_health.disease import DiseaseState as DiseaseState_
 
 from vivarium_public_health.risks.distributions import clip
 
@@ -15,9 +17,10 @@ if typing.TYPE_CHECKING:
     from vivarium.framework.population import SimulantData
 
 
-class IronDeficiency:
+class IronDeficiency(DiseaseState_):
 
     def __init__(self):
+        super().__init__(models.IRON_DEFICIENCY_MODEL_NAME)
         self._distribution = IronDeficiencyDistribution()
 
     @property
@@ -85,7 +88,8 @@ class IronDeficiency:
     def get_disability_weight(self, index):
         disability_data = self.raw_disability_weight(index)
         severity = self.severity(index)
-        disability_weight = pd.Series(disability_data.lookup(index, severity), index=index)
+        weights = disability_data.melt().drop_duplicates().set_index('variable').loc[severity.values].value.values
+        disability_weight = pd.Series(weights, index=index)
         return disability_weight
 
     def get_iron_responsive(self, index):
