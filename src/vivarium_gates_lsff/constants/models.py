@@ -1,13 +1,6 @@
+from vivarium_public_health.metrics.utilities import TransitionString
+
 from vivarium_gates_lsff.constants import data_keys
-
-
-class TransitionString(str):
-
-    def __new__(cls, value):
-        # noinspection PyArgumentList
-        obj = str.__new__(cls, value.lower())
-        obj.from_state, obj.to_state = value.split('_TO_')
-        return obj
 
 
 ###########################
@@ -67,10 +60,10 @@ STATE_MACHINE_MAP = {
         'states': MEASLES_MODEL_STATES,
         'transitions': MEASLES_MODEL_TRANSITIONS,
     },
-    # VITAMIN_A_MODEL_NAME: {
-    #     'states': VITAMIN_A_MODEL_STATES,
-    #     'transitions': VITAMIN_A_MODEL_TRANSITIONS,
-    # },
+    VITAMIN_A_MODEL_NAME: {
+        'states': VITAMIN_A_MODEL_STATES,
+        'transitions': VITAMIN_A_MODEL_TRANSITIONS,
+    },
 }
 
 
