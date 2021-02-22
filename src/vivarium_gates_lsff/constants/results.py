@@ -90,3 +90,6 @@ def RESULT_COLUMNS(field_map, kind='all'):
             columns.append(template.format(**{field: value for field, value in zip(fields, value_group)}))
     return columns
 
+ANEMIA_OBSERVER = 'anemia_observer'
+ANEMIA_SEVERITY_GROUPS = ['none', 'mild', 'moderate', 'severe']
+
