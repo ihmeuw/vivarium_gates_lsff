@@ -31,6 +31,7 @@ def make_measure_data(data, field_map):
         deaths=get_by_cause_measure_data(data, 'deaths', field_map),
         disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', field_map),
         disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', field_map),
+        
     )
     return measure_data
 

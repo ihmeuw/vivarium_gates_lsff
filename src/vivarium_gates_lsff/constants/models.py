@@ -64,6 +64,10 @@ STATE_MACHINE_MAP = {
         'states': VITAMIN_A_MODEL_STATES,
         'transitions': VITAMIN_A_MODEL_TRANSITIONS,
     },
+    IRON_DEFICIENCY_MODEL_NAME: {
+        'states': [f'anemia_{i}' for i in ANEMIA_SEVERITY_GROUPS],
+        'transitions': [],
+    },
 }
 
 

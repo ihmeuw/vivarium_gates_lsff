@@ -7,19 +7,18 @@ import pandas as pd
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
                                                       QueryString, to_years, get_age_bins)
 
-from vivarium_gates_lsff.constants import models, results                                           
+from vivarium_gates_lsff.constants import models
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
     from vivarium.framework.event import Event
-    from vivarium.framework.population import SimulantData
 
 
 class AnemiaObserver:
     """Observes person time in the various anemia states"""
     configuration_defaults = {
         'metrics': {
-            results.ANEMIA_OBSERVER: {
+            models.ANEMIA_OBSERVER: {
                 'by_age': True,
                 'by_year': True,
                 'by_sex': True,
@@ -29,21 +28,21 @@ class AnemiaObserver:
 
     def __init__(self):
         self.configuration_defaults = {
-            'metrics': {results.ANEMIA_OBSERVER:
-                            AnemiaObserver.configuration_defaults['metrics'][results.ANEMIA_OBSERVER]}
+            'metrics': { models.ANEMIA_OBSERVER:
+                         AnemiaObserver.configuration_defaults['metrics'][models.ANEMIA_OBSERVER]}
         }
 
     @property
     def name(self) -> str:
-        return results.ANEMIA_OBSERVER
+        return models.ANEMIA_OBSERVER
 
     def setup(self, builder: 'Builder'):
-        self.config = builder.configuration['metrics'][results.ANEMIA_OBSERVER].to_dict()
+        self.config = builder.configuration['metrics'][models.ANEMIA_OBSERVER].to_dict()
         self.clock = builder.time.clock()
         self.age_bins = get_age_bins(builder)
         self.person_time = Counter()
         self.anemia_severity = builder.value.get_value('anemia_severity')
-        self.states = results.ANEMIA_SEVERITY_GROUPS
+        self.states = models.ANEMIA_SEVERITY_GROUPS
 
         columns_required = ['alive']
         if self.config['by_age']:
