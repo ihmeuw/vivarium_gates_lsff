@@ -24,7 +24,7 @@ components:
     vivarium_gates_lsff.components:
         - IronDeficiency()
         - NeonatalSWC_without_incidence('neural_tube_defects')
-
+        - AnemiaObserver()
 
 configuration:
     input_data:
