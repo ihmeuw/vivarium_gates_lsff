@@ -185,6 +185,25 @@ class __CSMR_AFFECTEDBY_LBWSG(NamedTuple):
 CSMR_AFFECTEDBY_LBWSG = __CSMR_AFFECTEDBY_LBWSG()
 
 
+class __ZINC(NamedTuple):
+    ZINC_DEFICIENCY_CATEGORIES: TargetString = TargetString('risk_factor.zinc_deficiency.categories')
+    ZINC_DEFICIENCY_EXPOSURE: TargetString = TargetString('risk_factor.zinc_deficiency.exposure')
+    ZINC_DEFICIENCY_RELATIVE_RISK: TargetString = TargetString('risk_factor.zinc_deficiency.relative_risk')
+    ZINC_DEFICIENCY_PAF: TargetString = TargetString('risk_factor.zinc_deficiency.population_attributable_fraction')
+    ZINC_DEFICIENCY_DISTRIBUTION: TargetString = TargetString('risk_factor.zinc_deficiency.distribution')
+    ZINC_DEFICIENCY_RESTRICTIONS: TargetString = TargetString('risk_factor.zinc_deficiency.restrictions')
+
+    @property
+    def name(self):
+        return 'zinc'
+
+    @property
+    def log_name(self):
+        return self.name
+
+ZINC = __ZINC()
+
+
 MAKE_ARTIFACT_KEY_GROUPS = [
     POPULATION,
     COVARIATES,
@@ -195,4 +214,5 @@ MAKE_ARTIFACT_KEY_GROUPS = [
     VITAMIN_A,
     IRON_DEFICIENCY,
     CSMR_AFFECTEDBY_LBWSG,
+    ZINC,
 ]

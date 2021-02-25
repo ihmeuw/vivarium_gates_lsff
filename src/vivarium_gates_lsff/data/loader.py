@@ -63,6 +63,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
     mapping.update(map_loader_funcs(data_keys.NEURAL_TUBE_DEFECTS))
     mapping.update(map_loader_funcs(data_keys.LBWSG))
     mapping.update(map_loader_funcs(data_keys.VITAMIN_A))
+    mapping.update(map_loader_funcs(data_keys.ZINC))
     mapping.update({
         data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_EXPOSURE: load_standard_data,
         data_keys.IRON_DEFICIENCY.IRON_DEFICIENCY_EXPOSURE_SD: load_standard_data,

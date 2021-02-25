@@ -9,7 +9,9 @@ components:
             - SIR_fixed_duration('measles', '10')
         risks:
             - Risk('risk_factor.vitamin_a_deficiency')
+            - Risk('risk_factor.zinc_deficiency')
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.diarrheal_diseases.incidence_rate')
+            - RiskEffect('risk_factor.zinc_deficiency', 'cause.diarrheal_diseases.incidence_rate')
             - RiskEffect('risk_factor.vitamin_a_deficiency', 'cause.measles.incidence_rate')
         disease.special_disease:
             - RiskAttributableDisease('cause.vitamin_a_deficiency', 'risk_factor.vitamin_a_deficiency')
