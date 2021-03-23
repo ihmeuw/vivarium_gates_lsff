@@ -51,6 +51,7 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
 
     """
     mapping = {
+        data_keys.POPULATION.LOCATION: load_population_location,
         data_keys.POPULATION.STRUCTURE: load_population_structure,
         data_keys.POPULATION.AGE_BINS: load_age_bins,
         data_keys.POPULATION.DEMOGRAPHY: load_demographic_dimensions,
@@ -79,7 +80,12 @@ def get_data(lookup_key: str, location: str) -> pd.DataFrame:
     mapping.update(map_loader_funcs(data_keys.CSMR_AFFECTEDBY_LBWSG))
     return mapping[lookup_key](lookup_key, location)
 
+def load_population_location(key: str, location: str) -> str:
+    if key != data_keys.POPULATION.LOCATION:
+        raise ValueError(f'Unrecognized key {key}')
+    return location
 
+    
 def load_population_structure(key: str, location: str) -> pd.DataFrame:
     return interface.get_population_structure(location)
 
