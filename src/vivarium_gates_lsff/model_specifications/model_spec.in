@@ -16,7 +16,7 @@ components:
         disease.special_disease:
             - RiskAttributableDisease('cause.vitamin_a_deficiency', 'risk_factor.vitamin_a_deficiency')
         metrics:
-            - DiseaseObserver('diarrheal_diseases')
+            #- DiseaseObserver('diarrheal_diseases')
             - DiseaseObserver('measles')
             - DiseaseObserver('neural_tube_defects')
             - DiseaseObserver('vitamin_a_deficiency')
@@ -27,6 +27,7 @@ components:
         - IronDeficiency()
         - NeonatalSWC_without_incidence('neural_tube_defects')
         - AnemiaObserver()
+        - StateObserver('diarrheal_diseases')
 
 configuration:
     input_data:
