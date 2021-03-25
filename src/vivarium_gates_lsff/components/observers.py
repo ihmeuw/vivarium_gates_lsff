@@ -1,15 +1,14 @@
-import pandas as pd
 import itertools
 import typing
-
 from collections import Counter
 from typing import Dict, List, Tuple, Iterable
+
+import pandas as pd
 
 from vivarium_public_health.metrics.utilities import (get_output_template, get_group_counts,
                                                       get_state_person_time, get_transition_count,
                                                       QueryString, to_years, get_age_bins)
-
-from vivarium_gates_lsff.constants import models, results
+from vivarium_gates_lsff.constants import models
 
 if typing.TYPE_CHECKING:
     from vivarium.framework.engine import Builder
@@ -17,7 +16,7 @@ if typing.TYPE_CHECKING:
     from vivarium.framework.population import SimulantData
 
 
-class ResultsStratifier:
+class VitaminAZincStratifier:
     """Centralized component for handling results stratification.
 
     This should be used as a sub-component for observers.  The observers
@@ -105,6 +104,82 @@ class ResultsStratifier:
             else models.ZINC_DEFICIENCY_WITH_CONDITION_STATE_NAME)
 
 
+class VitaminAStratifier:
+    """Centralized component for handling results stratification.
+
+    This should be used as a sub-component for observers.  The observers
+    can then ask this component for population subgroups and labels during
+    results production and have this component manage adjustments to the
+    final column labels for the subgroups.
+
+    """
+
+    def __init__(self, observer_name: str):
+        self.name = f'{observer_name}_results_stratifier'
+
+    def setup(self, builder: 'Builder'):
+        """Perform this component's setup."""
+        # The only thing you should request here are resources necessary for
+        # results stratification.
+        self.population_view = builder.population.get_view([
+            models.VITAMIN_A_MODEL_NAME,
+            'age',
+            'tracked',  # Ensure we get the full population.
+        ])
+
+    def group(self, population: pd.DataFrame) -> Iterable[Tuple[Tuple[str, ...], pd.DataFrame]]:
+        """Takes the full population and yields stratified subgroups.
+
+        Parameters
+        ----------
+        population
+            The population to stratify.
+
+        Yields
+        ------
+            A tuple of stratification labels and the population subgroup
+            corresponding to those labels.
+
+        """
+        vit_a_pop = self.vitamin_a_population(population)
+
+        groups = models.VITAMIN_A_MODEL_STATES
+        for vit_a_group in groups:
+            if population.empty:
+                pop_in_group = population
+            else:
+                pop_in_group = population.loc[(vit_a_pop == vit_a_group)]
+            yield vit_a_group, pop_in_group
+
+    @staticmethod
+    def update_labels(measure_data: Dict[str, float], labels: Tuple[str, ...]) -> Dict[str, float]:
+        """Updates a dict of measure data with stratification labels.
+
+        Parameters
+        ----------
+        measure_data
+            The measure data with unstratified column names.
+        labels
+            The stratification labels. Yielded along with the population
+            subgroup the measure data was produced from by a call to
+            :obj:`ResultsStratifier.group`.
+
+        Returns
+        -------
+            The measure data with column names updated with the stratification
+            labels.
+
+        """
+        vit_a_group = labels
+        measure_data = {f'{k}_VA_{vit_a_group}': v
+                        for k, v in measure_data.items()}
+        return measure_data
+
+    def vitamin_a_population(self, population: pd.DataFrame) -> pd.Series:
+        pop = self.population_view.get(population.index)
+        temp =  pop[models.VITAMIN_A_MODEL_NAME]
+        return temp
+
 
 class StateObserver:
     """Observes transition counts and person time for a cause."""
@@ -118,19 +193,24 @@ class StateObserver:
         }
     }
 
+    stratifier_map = {
+        models.DIARRHEA_MODEL_NAME: VitaminAZincStratifier,
+        models.MEASLES_MODEL_NAME: VitaminAStratifier
+    }
+
     def __init__(self, disease: str):
         self.disease = disease
         self.configuration_defaults = {
             'metrics': {f'{disease}_observer': StateObserver.configuration_defaults['metrics']['disease_observer']}
         }
-        self.stratifier = ResultsStratifier(self.name)
+        self.stratifier = StateObserver.stratifier_map[disease](disease)
 
     @property
     def name(self) -> str:
         return f'disease_observer.{self.disease}'
 
     @property
-    def sub_components(self) -> List[ResultsStratifier]:
+    def sub_components(self) -> List[VitaminAZincStratifier]:
         return [self.stratifier]
 
     def setup(self, builder: 'Builder'):
