@@ -4,7 +4,7 @@ from typing import NamedTuple, List, Tuple
 import pandas as pd
 import yaml
 
-from vivarium_gates_lsff.constants import results
+from vivarium_gates_lsff.constants import models, results
 
 
 SCENARIO_COLUMN = 'scenario'
@@ -30,8 +30,15 @@ def make_measure_data(data, field_map):
         ylls=get_by_cause_measure_data(data, 'ylls', field_map),
         ylds=get_by_cause_measure_data(data, 'ylds', field_map),
         deaths=get_by_cause_measure_data(data, 'deaths', field_map),
-        disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', field_map),
-        disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', field_map),
+
+        # Specific to zinc and vitamin a stratification
+        disease_state_person_time_diarrhea=get_state_person_time_measure_data(data, 'disease_state_person_time_diarrhea', field_map),
+        disease_state_person_time_measles=get_state_person_time_measure_data(data, 'disease_state_person_time_measles', field_map),
+        disease_transition_count_diarrhea=get_transition_count_measure_data(data, 'disease_transition_count_diarrhea', field_map),
+        disease_transition_count_measles=get_transition_count_measure_data(data, 'disease_transition_count_measles', field_map),
+
+        # disease_state_person_time=get_state_person_time_measure_data(data, 'disease_state_person_time', field_map),
+        # disease_transition_count=get_transition_count_measure_data(data, 'disease_transition_count', field_map),
 
     )
     return measure_data
@@ -42,8 +49,15 @@ class MeasureData(NamedTuple):
     ylls: pd.DataFrame
     ylds: pd.DataFrame
     deaths: pd.DataFrame
-    disease_state_person_time: pd.DataFrame
-    disease_transition_count: pd.DataFrame
+
+    # Specific to zinc and vitamin a stratification
+    disease_state_person_time_diarrhea: pd.DataFrame
+    disease_state_person_time_measles: pd.DataFrame
+    disease_transition_count_diarrhea: pd.DataFrame
+    disease_transition_count_measles: pd.DataFrame
+
+    # disease_state_person_time: pd.DataFrame
+    # disease_transition_count: pd.DataFrame
 
     def dump(self, output_dir: Path):
         for key, df in self._asdict().items():
@@ -166,3 +180,27 @@ def get_transition_count_measure_data(data, measure, field_map):
     data['cause'] = data['measure'].str.split('_event_count').str[0]
     data['measure'] = 'transition_count'
     return sort_data(data)
+
+
+# Specific to zinc and vitamin a stratification
+def get_state_person_time_measure_data_special(data, measure, field_map):
+    data = get_measure_data(data, measure, field_map)
+    data = split_age_column(data, ('diarrhea' in measure))
+    data['measure'], data['cause'] = 'state_person_time', data.measure.str.split('_person_time').str[0]
+    return sort_data(data)
+
+
+def get_transition_count_measure_data_special(data, measure, field_map):
+    data = get_measure_data(data, measure, field_map)
+    data = split_age_column(data, ('diarrhea' in measure))
+    data['cause'] = data['measure'].str.split('_event_count').str[0]
+    data['measure'] = 'transition_count'
+    return sort_data(data)
+
+
+def split_age_column(data, has_zinc):
+    data['age'], data['vitamin_a_category'] = data.age.str.split('_VA_').str
+    if has_zinc:
+        data['vitamin_a_category'], data['zinc_category'] = data.vitamin_a_category.str.split('_ZINC_').str
+    return data
+
