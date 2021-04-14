@@ -203,9 +203,11 @@ class IronDeficiencyDistribution:
     @staticmethod
     def _mirrored_gumbel_ppf(propensity, mean, sd):
         x_max = data_values.HEMOGLOBIN_DISTRIBUTION.EXPOSURE_MAX
-        alpha = x_max - mean - (sd * np.euler_gamma * np.sqrt(6) / np.pi)
+        _alpha = x_max - mean - (sd * np.euler_gamma * np.sqrt(6) / np.pi)
         scale = sd * np.sqrt(6) / np.pi
-        return x_max - scipy.stats.gumbel_r(alpha, scale=scale).ppf(1 - propensity)
+        tmp = _alpha + (scale*np.euler_gamma)
+        alpha = _alpha + x_max - (2*tmp)
+        return scipy.stats.gumbel_r(alpha, scale=scale).ppf(propensity)
 
     @staticmethod
     def load_exposure_parameters(builder):
