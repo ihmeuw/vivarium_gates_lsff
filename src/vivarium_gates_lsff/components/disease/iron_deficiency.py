@@ -169,12 +169,12 @@ class IronDeficiency(DiseaseState_):
 
 
 class IronDeficiencyDistribution:
-
     @property
     def name(self):
         return f'{models.IRON_DEFICIENCY_MODEL_NAME}_exposure_distribution'
 
     def setup(self, builder: 'Builder'):
+        self.ensemble_propensity = builder.randomness.get_stream(f'{self.name}.propensity')
         exposure_parameters = self.load_exposure_parameters(builder)
         exposure_data = builder.lookup.build_table(exposure_parameters,
                                                    key_columns=['sex'],
@@ -190,9 +190,15 @@ class IronDeficiencyDistribution:
         exposure_data = self.exposure_parameters(propensity.index)
         mean = exposure_data['mean']
         sd = exposure_data['sd']
-        exposure = (data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA * self._gamma_ppf(propensity, mean, sd)
-                    + data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GUMBEL * self._mirrored_gumbel_ppf(propensity, mean, sd))
-        return pd.Series(exposure, index=propensity.index, name='value')
+
+        ensemble_propensity = self.ensemble_propensity.get_draw(propensity.index)
+        gamma = ensemble_propensity < data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA
+        gumbel = ~gamma
+
+        exposure = pd.Series(index=propensity.index, name='value')
+        exposure.loc[gamma] = self._gamma_ppf(propensity.loc[gamma], mean.loc[gamma], sd.loc[gamma])
+        exposure.loc[gumbel] = self._mirrored_gumbel_ppf(propensity.loc[gumbel], mean.loc[gumbel], sd.loc[gumbel])
+        return exposure
 
     @staticmethod
     def _gamma_ppf(propensity, mean, sd):
