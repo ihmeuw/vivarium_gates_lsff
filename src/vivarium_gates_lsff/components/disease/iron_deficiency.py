@@ -32,6 +32,7 @@ class IronDeficiency(DiseaseState_):
         return [self._distribution]
 
     def setup(self, builder: 'Builder'):
+        self.ensemble_propensity = builder.randomness.get_stream(f'{self.name}.ensemble.propensity')
         self.randomness = builder.randomness.get_stream(f'{self.name}.propensity')
 
         threshold_data = self.load_iron_responsiveness_threshold(builder)
@@ -63,7 +64,7 @@ class IronDeficiency(DiseaseState_):
         self.severity = builder.value.register_value_producer('anemia_severity',
                                                               source=self.get_severity)
 
-        columns_created = [f'{self.name}_propensity', 'iron_responsiveness_propensity']
+        columns_created = [f'{self.name}_propensity', 'iron_responsiveness_propensity', f'{self.name}_ensemble_propensity']
         columns_required = ['age', 'sex']
 
         self.population_view = builder.population.get_view(columns_created + columns_required)
@@ -73,17 +74,20 @@ class IronDeficiency(DiseaseState_):
                                                  requires_streams=[f'{self.name}.propensity'])
 
     def on_initialize_simulants(self, pop_data: 'SimulantData'):
+        ensemble_propensity = self.ensemble_propensity.get_draw(pop_data.index)
         propensity = self.randomness.get_draw(pop_data.index)
         iron_responsive_propensity = self.randomness.get_draw(pop_data.index, additional_key='iron_responsiveness')
         pop_update = pd.DataFrame({
             f'{self.name}_propensity': propensity,
-            f'iron_responsiveness_propensity': iron_responsive_propensity
+            f'iron_responsiveness_propensity': iron_responsive_propensity,
+            f'{self.name}_ensemble_propensity': ensemble_propensity
         }, index=pop_data.index)
         self.population_view.update(pop_update)
 
     def get_exposure(self, index):
         propensity = self.population_view.subview([f'{self.name}_propensity']).get(index).iron_deficiency_propensity
-        return self._compute_exposure(propensity)
+        ensemble_propensity = self.population_view.subview([f'{self.name}_propensity']).get(index).iron_deficiency_propensity
+        return self._compute_exposure(propensity, ensemble_propensity)
 
     def get_disability_weight(self, index):
         disability_data = self.raw_disability_weight(index)
@@ -114,8 +118,8 @@ class IronDeficiency(DiseaseState_):
         severity.name = 'anemia_severity'
         return severity
 
-    def _compute_exposure(self, propensity):
-        return self._distribution.ppf(propensity)
+    def _compute_exposure(self, propensity, ensemble_propensity):
+        return self._distribution.ppf(propensity, ensemble_propensity)
 
     def _get_severity(self, exposure):
         age = self.population_view.subview(['age']).get(exposure.index).age
@@ -169,7 +173,6 @@ class IronDeficiency(DiseaseState_):
 
 
 class IronDeficiencyDistribution:
-
     @property
     def name(self):
         return f'{models.IRON_DEFICIENCY_MODEL_NAME}_exposure_distribution'
@@ -185,14 +188,19 @@ class IronDeficiencyDistribution:
             requires_columns=['age', 'sex']
         )
 
-    def ppf(self, propensity: pd.Series) -> pd.Series:
+    def ppf(self, propensity: pd.Series, ensemble_propensity: pd.Series) -> pd.Series:
         propensity = clip(propensity)
         exposure_data = self.exposure_parameters(propensity.index)
         mean = exposure_data['mean']
         sd = exposure_data['sd']
-        exposure = (data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA * self._gamma_ppf(propensity, mean, sd)
-                    + data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GUMBEL * self._mirrored_gumbel_ppf(propensity, mean, sd))
-        return pd.Series(exposure, index=propensity.index, name='value')
+
+        gamma = ensemble_propensity < data_values.HEMOGLOBIN_DISTRIBUTION.WEIGHT_GAMMA
+        gumbel = ~gamma
+
+        exposure = pd.Series(index=propensity.index, name='value')
+        exposure.loc[gamma] = self._gamma_ppf(propensity.loc[gamma], mean.loc[gamma], sd.loc[gamma])
+        exposure.loc[gumbel] = self._mirrored_gumbel_ppf(propensity.loc[gumbel], mean.loc[gumbel], sd.loc[gumbel])
+        return exposure
 
     @staticmethod
     def _gamma_ppf(propensity, mean, sd):
