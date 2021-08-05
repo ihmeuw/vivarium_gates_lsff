@@ -4,6 +4,25 @@ vivarium_gates_lsff
 
 Research repository for the vivarium_gates_lsff project.
 
+! Note !
+------------
+
+This project is being set aside in a partially completed state. Some notes about 
+the current state:
+
+- setup.py has the latest vivarium tools with the exception of vivarium itself 
+  (10.4 has an artifact format change and using it will require code to be modified)
+
+- the file ``archive_requirements.txt`` is a snapshot of a working environment
+
+- ``make_specs``, ``simulate``, ``psimulate``, and ``make_results`` are in sync and work with
+  the above environment.
+
+- current artifacts (Uganda and United Republic of Tanzania) can be found here:
+  ``/share/costeffectiveness/artifacts/vivarium_gates_lsff/``
+
+
+
 .. contents::
    :depth: 1
 
